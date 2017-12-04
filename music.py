@@ -5,20 +5,21 @@ from pygame.time import Clock
 from threading import Thread
 from pandas import read_csv
 
+scale = read_csv('scale.csv')
 
-def get_tones(tone: str, octave: str):
+def __get_tones(tone: str, octave: str):
     filtered = scale.loc[(scale['TONE'] == tone) & (scale['OCTAVE'] == int(octave))]['MIDI'].values
     return filtered[0]
 
 
-def play(arg_time, tone:str, octave:str):
+def __play(arg_time, tone:str, octave:str):
     # CREATE MEMORY FILE
     memFile = BytesIO()
     MyMIDI = MIDIFile(1, adjust_origin=True)
     track = 0
     time = 0
     channel = 0
-    pitch = int(get_tones(tone, octave))
+    pitch = int(__get_tones(tone, octave))
     duration = arg_time
     volume = 100
     MyMIDI.addProgramChange(track, channel, time, 90)
@@ -39,20 +40,12 @@ def play(arg_time, tone:str, octave:str):
         clock.tick(1)
 
 
-pygame.init()
-pygame.mixer.init()
-pygame.mixer.set_num_channels(20)
-scale = read_csv('scale.csv')
-print(scale)
-while True:
-    entry = input().split(',')
-    time = entry[0]
-    tone = entry[1]
-    octave = entry[2]
-    if not time or not tone:
-        continue
-    else:
-        time = float(time)
-    thread = Thread(target=play, args=[time, tone, octave])
-    thread.start()
+def start_mixer():
+    pygame.init()
+    pygame.mixer.init()
+    pygame.mixer.set_num_channels(20)
 
+
+def play_note(time, tone, octave):
+    thread = Thread(target=__play, args=[time, tone, octave])
+    thread.start()
