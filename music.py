@@ -7,12 +7,13 @@ from pandas import read_csv
 
 scale = read_csv('scale.csv')
 
+
 def __get_tones(tone: str, octave: str):
     filtered = scale.loc[(scale['TONE'] == tone) & (scale['OCTAVE'] == int(octave))]['MIDI'].values
     return filtered[0]
 
 
-def __play(arg_time, tone:str, octave:str):
+def __play(arg_time, tone: str, octave: str):
     # CREATE MEMORY FILE
     memFile = BytesIO()
     MyMIDI = MIDIFile(1, adjust_origin=True)
@@ -49,3 +50,13 @@ def start_mixer():
 def play_note(time, tone, octave):
     thread = Thread(target=__play, args=[time, tone, octave])
     thread.start()
+
+
+def get_notes():
+    values = scale['TONE'].values
+    octaves = scale['OCTAVE'].values
+    return list(f'{value},{octave}' for value, octave in zip(values,octaves))
+
+
+if __name__ == '__main__':
+    get_notes()
