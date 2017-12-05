@@ -4,7 +4,7 @@ import pygame.mixer
 from pygame.time import Clock
 from threading import Thread
 from pandas import read_csv
-
+from typing import List
 scale = read_csv('scale.csv')
 
 
@@ -24,7 +24,7 @@ def __play(arg_time, tone: str, octave: str):
     duration = arg_time
     volume = 100
     MyMIDI.addProgramChange(track, channel, time, 90)
-    MyMIDI.addTempo(track, time, 120)
+    MyMIDI.addTempo(track, time, 60)
 
     # WRITE A SCALE
     MyMIDI.addNote(track, channel, pitch, time, duration + 1, volume)
@@ -55,8 +55,58 @@ def play_note(time, tone, octave):
 def get_notes():
     values = scale['TONE'].values
     octaves = scale['OCTAVE'].values
-    return list(f'{value},{octave}' for value, octave in zip(values,octaves))
+    return list(f'{value},{octave}' for value, octave in zip(values, octaves))
 
+
+class Nota:
+    def __init__(self, nota: str):
+        self.nota = nota
+        self.color = None
+
+
+class Tono:
+    def __init__(self, nota: Nota, octava: int, tiempo: int):
+        self.nota = nota
+        self.octava = octava
+        self.tiempo = tiempo
+
+    def __str__(self):
+        return f'<Nota= {self.nota.nota}, Octava = {self.octava}, Tiempo= {self.tiempo}>'
+
+
+class TonoFactory:
+    def __init__(self):
+        self.possible_tones = get_notes()
+        self.notas = {
+            'C': Nota('C'),
+            'C#/Db': Nota('C#/Db'),
+            'D': Nota('D'),
+            'D#/Eb': Nota('D#/Eb'),
+            'E': Nota('E'),
+            'F': Nota('F'),
+            'F#/Gb': Nota('F#/Gb'),
+            'G': Nota('G'),
+            'G#/Ab': Nota('G#/Ab'),
+            'A': Nota('A'),
+            'A#/Bb': Nota('A#/Bb'),
+            'B': Nota('B'),
+        }
+        self.tonos: List[Tono] = []
+
+    def new_tono(self, nota, octava, tiempo):
+        for tono in self.tonos:
+            if tono.nota.nota == nota and tono.octava == octava or f'{nota},{octava}' not in self.possible_tones:
+                return False
+            else:
+                pass
+        tono = Tono(self.notas[nota], octava, tiempo)
+        self.tonos.append(tono)
+        return True
+
+    def remove_tono(self, row: int):
+        if not isinstance(row, int):
+            raise TypeError(f'expected int got {type(row)}')
+        self.tonos.pop(row)
 
 if __name__ == '__main__':
     get_notes()
