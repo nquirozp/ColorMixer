@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import \
     QColorDialog, \
     QStyledItemDelegate, \
     QStyle
-from music import start_mixer, play_note, TonoFactory
+from music import start_mixer, play_note, TonoFactory, stop_mixer
+from threading import Thread, Event
 
 window = uic.loadUiType('mainwindow.ui')
 
@@ -78,11 +79,11 @@ class StyleDelegateForQTableWidget(QStyledItemDelegate):
 class MainWindow(window[0], window[1]):
     def __init__(self):
         super().__init__()
-        start_mixer()
         self.setupUi(self)
         self.tf = TonoFactory()
         self.stackedWidget.setCurrentIndex(0)
-
+        p = self.colorFrame.palette()
+        self.frame_color = p.color(self.colorFrame.backgroundRole())
         # PAGE 1
         self.notesList.setSortingEnabled(True)
 
@@ -100,6 +101,10 @@ class MainWindow(window[0], window[1]):
         self.next2.clicked.connect(self.to_sounds)
         self.tableWidget.setItemDelegate(StyleDelegateForQTableWidget(self.tableWidget))
 
+        # PAGE 3
+        self.stop_event = Event()
+
+
     # PAGE 1 Methods
 
     def add_to_right(self):
@@ -108,6 +113,7 @@ class MainWindow(window[0], window[1]):
         tiempo = self.durationSpin.value()
         if self.tf.new_tono(nota, octava, tiempo):
             self.notesList.addItem(custListWidgetItem(str(self.tf.tonos[-1])))
+            self.tf.tonos[-1].nota.color = self.frame_color
             self.durationSpin.setValue(1)
         else:
             self.warningLabel.setText('No puedes agregar este tono!.')
@@ -150,12 +156,20 @@ class MainWindow(window[0], window[1]):
     # Page 3 Methods
     def to_sounds(self):
         self.stackedWidget.setCurrentIndex(2)
+        start_mixer()
         for tono in self.tf.tonos:
             p = self.colorFrame.palette()
             p.setColor(self.colorFrame.backgroundRole(), tono.nota.color)
             self.colorFrame.setPalette(p)
             play_note(tono.tiempo, tono.nota.nota, tono.octava)
+            if tono is self.tf.tonos[-1]:
+                QtTest.QTest.qWait(tono.tiempo * 900)
+                return
             QtTest.QTest.qWait(tono.tiempo * 1000)
+        stop_mixer()
+    def stop_sounds(self):
+        pass
+
 
 
 if __name__ == '__main__':

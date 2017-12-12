@@ -7,6 +7,8 @@ from pandas import read_csv
 from typing import List
 scale = read_csv('scale.csv')
 
+keep_playing = False
+
 
 def __get_tones(tone: str, octave: str):
     filtered = scale.loc[(scale['TONE'] == tone) & (scale['OCTAVE'] == int(octave))]['MIDI'].values
@@ -14,6 +16,7 @@ def __get_tones(tone: str, octave: str):
 
 
 def __play(arg_time, tone: str, octave: str):
+    keep_playing = True
     # CREATE MEMORY FILE
     memFile = BytesIO()
     MyMIDI = MIDIFile(1, adjust_origin=True)
@@ -38,13 +41,23 @@ def __play(arg_time, tone: str, octave: str):
     pygame.mixer.music.load(temp)
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
-        clock.tick(1)
+        if keep_playing:
+            clock.tick(1)
+        else:
+            pygame.mixer.stop()
+            return
 
 
 def start_mixer():
     pygame.init()
     pygame.mixer.init()
     pygame.mixer.set_num_channels(20)
+
+
+def stop_mixer():
+    global keep_playing
+    keep_playing = False
+    pygame.mixer.stop()
 
 
 def play_note(time, tone, octave):
