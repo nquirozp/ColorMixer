@@ -3,15 +3,15 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QBrush, QPalette
 from PyQt5.QtWidgets import \
-    QApplication,\
-    QListWidgetItem,\
-    QTableWidgetItem,\
-    QColorDialog,\
-    QStyledItemDelegate,\
+    QApplication, \
+    QListWidgetItem, \
+    QTableWidgetItem, \
+    QColorDialog, \
+    QStyledItemDelegate, \
     QStyle
 from music import start_mixer, play_note, TonoFactory
 
-window = uic.loadUiType('stackedwidget.ui')
+window = uic.loadUiType('mainwindow.ui')
 
 
 class custListWidgetItem(QListWidgetItem):
@@ -21,14 +21,14 @@ class custListWidgetItem(QListWidgetItem):
             'C#/Db': 1,
             'D': 2,
             'D#/Eb': 3,
-            'E': 2,
-            'F': 3,
-            'F#/Gb': 4,
-            'G': 5,
-            'G#/Ab': 5,
-            'A': 6,
-            'A#/Bb': 6,
-            'B': 7,
+            'E': 4,
+            'F': 5,
+            'F#/Gb': 6,
+            'G': 7,
+            'G#/Ab': 8,
+            'A': 9,
+            'A#/Bb': 10,
+            'B': 11,
         }
         self_data = self.data(Qt.EditRole).split(',')
         self_tone = self_data[0][7:]
@@ -81,65 +81,46 @@ class MainWindow(window[0], window[1]):
         start_mixer()
         self.setupUi(self)
         self.tf = TonoFactory()
+        self.stackedWidget.setCurrentIndex(0)
 
         # PAGE 1
-        self.comboBox.addItems(note for note in self.tf.notas.keys())
-        self.listWidget.setSortingEnabled(True)
+        self.notesList.setSortingEnabled(True)
 
-        self.pushButton_2.clicked.connect(self.to_colors)
-        self.toolButton.clicked.connect(self.add_to_right)
-        self.toolButton_2.clicked.connect(self.add_to_left)
+        self.next1.clicked.connect(self.to_colors)
+        self.addToRight.clicked.connect(self.add_to_right)
+        self.addToLeft.clicked.connect(self.add_to_left)
 
         # PAGE 2
         self.tableWidget.setHorizontalHeaderLabels(['Nota', 'Color'])
         self.tableWidget.horizontalHeader().show()
         self.tableWidget.cellDoubleClicked.connect(self.choose_color)
 
-        self.pushButton_3.clicked.connect(lambda:
-                                          self.setCurrentIndex(0))
-        self.pushButton_4.clicked.connect(self.to_sounds)
+        self.previous2.clicked.connect(lambda:
+                                       self.stackedWidget.setCurrentIndex(0))
+        self.next2.clicked.connect(self.to_sounds)
         self.tableWidget.setItemDelegate(StyleDelegateForQTableWidget(self.tableWidget))
 
     # PAGE 1 Methods
 
     def add_to_right(self):
-        nota = str(self.comboBox.currentText())
-        octava = self.spinBox.value()
-        tiempo = self.spinBox_2.value()
+        nota = str(self.noteStringBox.textFromValue(self.noteStringBox.value()))
+        octava = self.octaveSpin.value()
+        tiempo = self.durationSpin.value()
         if self.tf.new_tono(nota, octava, tiempo):
-            self.listWidget.addItem(custListWidgetItem(str(self.tf.tonos[-1])))
-            if octava == 10:
-                combo_index = self.comboBox.currentIndex()
-                self.label_3.setText('Nota(...)')
-                if combo_index == self.comboBox.count() - 1:
-                    self.comboBox.setCurrentIndex(0)
-                else:
-                    self.comboBox.setCurrentIndex(self.comboBox.currentIndex() + 1)
-                QtTest.QTest.qWait(1000)
-                self.label_3.setText('Nota')
-                self.label_4.setText('Octava(...)')
-                self.spinBox.setValue(1)
-                QtTest.QTest.qWait(1000)
-                self.label_4.setText('Octava')
-            else:
-                self.label_4.setText('Octava(...)')
-                self.spinBox.setValue(self.spinBox.value() + 1)
-                QtTest.QTest.qWait(1000)
-                self.label_4.setText('Octava')
-            self.spinBox_2.setValue(1)
+            self.notesList.addItem(custListWidgetItem(str(self.tf.tonos[-1])))
+            self.durationSpin.setValue(1)
         else:
-            self.label_5.setText('No puedes agregar este tono!.')
+            self.warningLabel.setText('No puedes agregar este tono!.')
             QtTest.QTest.qWait(2000)
-            self.label_5.setText('')
-        self.listWidget.sortItems()
+            self.warningLabel.setText('')
+        self.notesList.sortItems()
 
     def add_to_left(self):
-        print('called')
-        row = self.listWidget.currentRow()
+        row = self.notesList.currentRow()
         if row == -1:
-            row = self.listWidget.count() - 1
+            row = self.notesList.count() - 1
 
-        self.listWidget.takeItem(row)
+        self.notesList.takeItem(row)
         self.tf.remove_tono(row)
 
     def to_colors(self):
@@ -157,7 +138,7 @@ class MainWindow(window[0], window[1]):
             color_item.setFlags(color_item.flags() ^ Qt.ItemIsEditable)
             self.tableWidget.setItem(row, 0, tone_item)
             self.tableWidget.setItem(row, 1, color_item)
-        self.setCurrentIndex(1)
+        self.stackedWidget.setCurrentIndex(1)
 
     # Page 2 Methods
     def choose_color(self, row, column):
@@ -168,13 +149,14 @@ class MainWindow(window[0], window[1]):
 
     # Page 3 Methods
     def to_sounds(self):
-        self.setCurrentIndex(2)
+        self.stackedWidget.setCurrentIndex(2)
         for tono in self.tf.tonos:
-            p = self.frame_5.palette()
-            p.setColor(self.frame_5.backgroundRole(), tono.nota.color)
-            self.frame_5.setPalette(p)
+            p = self.colorFrame.palette()
+            p.setColor(self.colorFrame.backgroundRole(), tono.nota.color)
+            self.colorFrame.setPalette(p)
             play_note(tono.tiempo, tono.nota.nota, tono.octava)
             QtTest.QTest.qWait(tono.tiempo * 1000)
+
 
 if __name__ == '__main__':
     app = QApplication([])
